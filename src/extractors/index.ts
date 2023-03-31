@@ -7,9 +7,9 @@ import RapidCloud from './rapidcloud';
 import StreamTape from './streamtape';
 import VizCloud from './vizcloud';
 import Filemoon from './filemoon';
-import Vrv from './vrv';
 import BilibiliExtractor from './bilibili';
 import AsianLoad from './asianload';
+import StreamLare from './streamlare';
 
 export {
   GogoCDN,
@@ -21,7 +21,7 @@ export {
   StreamTape,
   VizCloud,
   Filemoon,
-  Vrv,
   BilibiliExtractor,
   AsianLoad,
+  StreamLare,
 };

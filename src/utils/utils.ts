@@ -68,7 +68,7 @@ export const genElement = (s: string, e: string) => {
 export const range = ({ from = 0, to = 0, step = 1, length = Math.ceil((to - from) / step) }) =>
   Array.from({ length }, (_, i) => from + i * step);
 
-export const capitalizeFirstLetter = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+export const capitalizeFirstLetter = (s: string) => s?.charAt(0).toUpperCase() + s.slice(1);
 
 export const getDays = (day1: string, day2: string) => {
   const day1Index = days.indexOf(capitalizeFirstLetter(day1)) - 1;
@@ -141,3 +141,13 @@ export const substringBefore = (str: string, toFind: string) => {
   const index = str.indexOf(toFind);
   return index == -1 ? '' : str.substring(0, index);
 };
+
+export const substringAfterLast = (str: string, toFind: string) => {
+  const index = str.lastIndexOf(toFind);
+  return index == -1 ? '' : str.substring(index + toFind.length);
+}
+
+export const substringBeforeLast = (str: string, toFind: string) => {
+  const index = str.lastIndexOf(toFind);
+  return index == -1 ? '' : str.substring(0, index);
+}

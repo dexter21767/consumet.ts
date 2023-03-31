@@ -129,6 +129,8 @@ class AnimeFox extends AnimeParser {
       )!;
       info.url = `${this.baseUrl}/${id}`;
       info.episodes = [];
+      info.hasSub = $('div.anisc-info > div:nth-child(3) > span:nth-child(2)').text().trim() == 'Subbed';
+      info.hasDub = $('div.anisc-info > div:nth-child(3) > span:nth-child(2)').text().trim() == 'Dubbed';
       const episodes = Array.from({ length: info.totalEpisodes }, (_, i) => i + 1);
       episodes.forEach((element, i) =>
         info.episodes?.push({
@@ -185,12 +187,12 @@ class AnimeFox extends AnimeParser {
       const { data } = await axios.get(`${this.baseUrl}/watch/${episodeId}`);
       const $ = load(data);
       const iframe = $('#iframe-to-load').attr('src') || '';
-      const streamUrl = `https://goload.io/streaming.php?id=${iframe.split('=').pop()}`;
-
+      const streamUrl = `https://goload.io/streaming.php?id=${iframe.split('=')[1]}`;
       return {
         sources: await new GogoCDN().extract(new URL(streamUrl)),
       };
     } catch (err) {
+      console.log(err)
       throw new Error('Something went wrong. Please try again later.');
     }
   };
@@ -204,3 +206,9 @@ class AnimeFox extends AnimeParser {
 }
 
 export default AnimeFox;
+
+// (async () => {
+//   const animepahe = new AnimeFox();
+//   const sources = await animepahe.fetchEpisodeSources("youkoso-jitsuryoku-shijou-shugi-no-kyoushitsu-e-tv-episode-1");
+//   console.log(sources);
+// })();

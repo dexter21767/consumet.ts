@@ -47,7 +47,6 @@ class ViewAsian extends models_1.MovieParser {
                 return searchResult;
             }
             catch (err) {
-                console.log(err);
                 throw new Error(err.message);
             }
         };

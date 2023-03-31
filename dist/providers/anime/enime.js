@@ -99,7 +99,7 @@ class Enime extends models_1.AnimeParser {
         /**
          * @param id anilist id
          */
-        this.fetchAnimeInfoByAnilistId = async (id, type) => {
+        this.fetchAnimeInfoByAnilistId = async (id, type = 'gogoanime') => {
             var _a, _b;
             const animeInfo = {
                 id: id,
@@ -239,7 +239,7 @@ class Enime extends models_1.AnimeParser {
                 headers: {},
                 sources: [],
             };
-            const { data: { url, referer }, } = await axios_1.default.get(`${this.enimeApi}/source/${sourceId}`);
+            const { data: { url, referer, subtitle }, } = await axios_1.default.get(`${this.enimeApi}/source/${sourceId}`);
             res.headers['Referer'] = referer;
             const resResult = await axios_1.default.get(url).catch(() => {
                 throw new Error('Source not found');
@@ -260,6 +260,14 @@ class Enime extends models_1.AnimeParser {
                 isM3U8: url.includes('.m3u8'),
                 quality: 'default',
             });
+            if (subtitle) {
+                res.subtitles = [
+                    {
+                        url: subtitle,
+                        lang: 'English',
+                    },
+                ];
+            }
             return res;
         };
     }

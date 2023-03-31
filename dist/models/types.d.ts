@@ -91,6 +91,21 @@ export interface IAnimeInfo extends IAnimeResult {
     recommendations?: IAnimeResult[];
     relations?: IAnimeResult[];
 }
+export interface IAnimeEpisodeV2 {
+    [x: string]: {
+        id: string;
+        season_number: number;
+        title: string;
+        image: string;
+        description: string;
+        releaseDate: string;
+        isHD: boolean;
+        isAdult: boolean;
+        isDubbed: boolean;
+        isSubbed: boolean;
+        duration: number;
+    }[];
+}
 export interface IAnimeEpisode {
     id: string;
     number: number;
@@ -203,8 +218,9 @@ export interface ILightNovelChapter {
     url?: string;
 }
 export interface ILightNovelChapterContent {
+    novelTitle: string;
+    chapterTitle: string;
     text: string;
-    html?: string;
 }
 export interface ILightNovelInfo extends ILightNovelResult {
     authors?: string[];
@@ -277,6 +293,7 @@ export interface ISource {
     subtitles?: ISubtitle[];
     sources: IVideo[];
     download?: string;
+    embedURL?: string;
 }
 /**
  * Used **only** for movie/tvshow providers
@@ -292,6 +309,7 @@ export interface IMovieEpisode {
     url?: string;
     number?: number;
     season?: number;
+    description?: string;
     image?: string;
     releaseDate?: string;
     [x: string]: unknown;
@@ -336,6 +354,8 @@ interface INewsFeedPreview {
     full: string;
 }
 export interface IMovieInfo extends IMovieResult {
+    cover?: string;
+    recommendations?: IMovieResult[];
     genres?: string[];
     description?: string;
     rating?: number;
@@ -345,6 +365,11 @@ export interface IMovieInfo extends IMovieResult {
     casts?: string[];
     tags?: string[];
     totalEpisodes?: number;
+    seasons?: {
+        season: number;
+        image?: string;
+        episodes: IMovieEpisode[];
+    }[];
     episodes?: IMovieEpisode[];
 }
 export declare enum Genres {
@@ -387,7 +412,7 @@ export interface ProxyConfig {
      * The proxy URL
      * @example https://proxy.com
      **/
-    url: string;
+    url: string | string[];
     /**
      * X-API-Key header value (if any)
      **/

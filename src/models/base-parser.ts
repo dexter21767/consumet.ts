@@ -1,12 +1,59 @@
-import { BaseProvider } from '.';
-import axios from 'axios';
+import axios, { AxiosInstance } from 'axios';
+
+import { BaseProvider, ProxyConfig } from '.';
 
 abstract class BaseParser extends BaseProvider {
+  constructor(baseUrl?: string, proxy?: ProxyConfig) {
+    super();
 
+    this.client = axios.create({
+      baseURL: baseUrl,
+    });
+
+    if (proxy) this.setProxy(proxy);
+  }
+  private validUrl = /^https?:\/\/.+/;
   /**
-   * proxy url for fetching the data
+   * Set or Change the proxy config
    */
-  private proxy: string | undefined;
+  setProxy(proxy: ProxyConfig) {
+    if (!proxy?.url) return;
+
+    if (typeof proxy?.url === 'string')
+      if (!this.validUrl.test(proxy.url)) throw new Error('Proxy URL is invalid!');
+
+    if (Array.isArray(proxy?.url)) {
+      for (const [i, url] of this.toMap<string>(proxy.url))
+        if (!this.validUrl.test(url)) throw new Error(`Proxy URL at index ${i} is invalid!`);
+
+      this.rotateProxy({ ...proxy, urls: proxy.url });
+    }
+
+    this.client.interceptors.request.use(config => {
+      if (proxy?.url) {
+        config.headers = {
+          ...config.headers,
+          'x-api-key': proxy?.key ?? '',
+          "Origin": "axios"
+        };
+        config.url = `${proxy.url}${config?.baseURL}${config?.url ? config?.url : ''}`;
+      }
+      return config;
+    });
+  }
+
+  private rotateProxy = (proxy: Omit<ProxyConfig, 'url'> & { urls: string[] }, ms: number = 5000) => {
+    setInterval(() => {
+      const url = proxy.urls.shift();
+      if (url) proxy.urls.push(url);
+
+      this.setProxy({ url: proxy.urls[0], key: proxy.key });
+    }, ms);
+  };
+
+  private toMap = <T>(arr: T[]): [number, T][] => arr.map((v, i) => [i, v]);
+
+  protected client: AxiosInstance;
 
   /**
    * Search for books/anime/manga/etc using the given query
@@ -14,19 +61,6 @@ abstract class BaseParser extends BaseProvider {
    * returns a promise resolving to a data object
    */
   abstract search(query: string, ...args: any[]): Promise<unknown>;
-
-  set proxyUrl(url: string | undefined) {
-    if (url && !url.startsWith('http')) throw new Error('[BaseParser] Invalid proxy url');
-    if (url && !url.endsWith('/')) url += '/';    
-    this.proxy = url;
-  }
-
-  get proxyUrl(): string | undefined {
-    return this.proxy;
-  }
-
-
-
 }
 
 export default BaseParser;

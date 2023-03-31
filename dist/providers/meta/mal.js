@@ -95,27 +95,31 @@ class Myanimelist extends models_1.AnimeParser {
          * @param fetchFiller fetch filler episodes
          */
         this.fetchAnimeInfo = async (animeId, dub = false, fetchFiller = false) => {
-            var _a, _b, _c, _d, _e, _f;
+            var _a, _b, _c, _d, _e, _f, _g;
             try {
                 const animeInfo = await this.fetchMalInfoById(animeId);
+                const titleWithLanguages = animeInfo === null || animeInfo === void 0 ? void 0 : animeInfo.title;
                 let fillerEpisodes;
                 if ((this.provider instanceof zoro_1.default || this.provider instanceof gogoanime_1.default) &&
                     !dub &&
                     (animeInfo.status === models_1.MediaStatus.ONGOING ||
-                        (0, utils_1.range)({ from: 2000, to: new Date().getFullYear() + 1 }).includes(animeInfo.startDate.year))) {
+                        (0, utils_1.range)({ from: 2000, to: new Date().getFullYear() + 1 }).includes((_a = animeInfo.startDate) === null || _a === void 0 ? void 0 : _a.year))) {
                     try {
-                        animeInfo.episodes = (_a = (await new enime_1.default().fetchAnimeInfoByMalId(animeId, this.provider.name.toLowerCase())).episodes) === null || _a === void 0 ? void 0 : _a.map((item) => ({
+                        animeInfo.episodes = (_b = (await new enime_1.default().fetchAnimeInfoByMalId(animeId, this.provider.name.toLowerCase())).episodes) === null || _b === void 0 ? void 0 : _b.map((item) => ({
                             id: item.slug,
                             title: item.title,
                             description: item.description,
                             number: item.number,
                             image: item.image,
                         }));
-                        (_b = animeInfo.episodes) === null || _b === void 0 ? void 0 : _b.reverse();
+                        (_c = animeInfo.episodes) === null || _c === void 0 ? void 0 : _c.reverse();
                     }
                     catch (err) {
-                        animeInfo.episodes = await this.findAnimeSlug(animeInfo.title, animeInfo.season, (_c = animeInfo.startDate) === null || _c === void 0 ? void 0 : _c.year, animeId, dub);
-                        animeInfo.episodes = (_d = animeInfo.episodes) === null || _d === void 0 ? void 0 : _d.map((episode) => {
+                        animeInfo.episodes = await this.findAnimeSlug((titleWithLanguages === null || titleWithLanguages === void 0 ? void 0 : titleWithLanguages.english) ||
+                            (titleWithLanguages === null || titleWithLanguages === void 0 ? void 0 : titleWithLanguages.romaji) ||
+                            (titleWithLanguages === null || titleWithLanguages === void 0 ? void 0 : titleWithLanguages.native) ||
+                            (titleWithLanguages === null || titleWithLanguages === void 0 ? void 0 : titleWithLanguages.userPreferred), animeInfo.season, (_d = animeInfo.startDate) === null || _d === void 0 ? void 0 : _d.year, animeId, dub);
+                        animeInfo.episodes = (_e = animeInfo.episodes) === null || _e === void 0 ? void 0 : _e.map((episode) => {
                             if (!episode.image)
                                 episode.image = animeInfo.image;
                             return episode;
@@ -124,7 +128,10 @@ class Myanimelist extends models_1.AnimeParser {
                     }
                 }
                 else
-                    animeInfo.episodes = await this.findAnimeSlug(animeInfo.title, animeInfo.season, (_e = animeInfo.startDate) === null || _e === void 0 ? void 0 : _e.year, animeId, dub);
+                    animeInfo.episodes = await this.findAnimeSlug((titleWithLanguages === null || titleWithLanguages === void 0 ? void 0 : titleWithLanguages.english) ||
+                        (titleWithLanguages === null || titleWithLanguages === void 0 ? void 0 : titleWithLanguages.romaji) ||
+                        (titleWithLanguages === null || titleWithLanguages === void 0 ? void 0 : titleWithLanguages.native) ||
+                        (titleWithLanguages === null || titleWithLanguages === void 0 ? void 0 : titleWithLanguages.userPreferred), animeInfo.season, (_f = animeInfo.startDate) === null || _f === void 0 ? void 0 : _f.year, animeId, dub);
                 if (fetchFiller) {
                     const { data: fillerData } = await (0, axios_1.default)({
                         baseURL: `https://raw.githubusercontent.com/saikou-app/mal-id-filler-list/main/fillers/${animeId}.json`,
@@ -136,7 +143,7 @@ class Myanimelist extends models_1.AnimeParser {
                         fillerEpisodes === null || fillerEpisodes === void 0 ? void 0 : fillerEpisodes.push(...fillerData.episodes);
                     }
                 }
-                animeInfo.episodes = (_f = animeInfo.episodes) === null || _f === void 0 ? void 0 : _f.map((episode) => {
+                animeInfo.episodes = (_g = animeInfo.episodes) === null || _g === void 0 ? void 0 : _g.map((episode) => {
                     if (!episode.image)
                         episode.image = animeInfo.image;
                     if (fetchFiller &&
@@ -196,7 +203,8 @@ class Myanimelist extends models_1.AnimeParser {
             var _a, _b, _c;
             if (this.provider instanceof enime_1.default)
                 return (await this.provider.fetchAnimeInfoByMalId(malId)).episodes;
-            const slug = title.replace(/[^0-9a-zA-Z]+/g, ' ');
+            // console.log({ title });
+            const slug = title === null || title === void 0 ? void 0 : title.replace(/[^0-9a-zA-Z]+/g, ' ');
             let possibleAnime;
             if (malId && !(this.provider instanceof crunchyroll_1.default || this.provider instanceof bilibili_1.default)) {
                 const malAsyncReq = await (0, axios_1.default)({
@@ -258,9 +266,21 @@ class Myanimelist extends models_1.AnimeParser {
                 });
             }
             if (this.provider instanceof crunchyroll_1.default) {
-                return dub
-                    ? possibleAnime.episodes.filter((ep) => ep.isDubbed)
-                    : possibleAnime.episodes.filter((ep) => ep.type == 'Subbed');
+                const nestedEpisodes = Object.keys(possibleAnime.episodes)
+                    .filter((key) => key.toLowerCase().includes(dub ? 'dub' : 'sub'))
+                    .sort((first, second) => {
+                    var _a, _b, _c, _d;
+                    return (((_b = (_a = possibleAnime.episodes[first]) === null || _a === void 0 ? void 0 : _a[0].season_number) !== null && _b !== void 0 ? _b : 0) -
+                        ((_d = (_c = possibleAnime.episodes[second]) === null || _c === void 0 ? void 0 : _c[0].season_number) !== null && _d !== void 0 ? _d : 0));
+                })
+                    .map((key) => {
+                    const audio = key
+                        .replace(/[0-9]/g, '')
+                        .replace(/(^\w{1})|(\s+\w{1})/g, (letter) => letter.toUpperCase());
+                    possibleAnime.episodes[key].forEach((element) => (element.type = audio));
+                    return possibleAnime.episodes[key];
+                });
+                return nestedEpisodes.flat();
             }
             const possibleProviderEpisodes = possibleAnime.episodes;
             if (typeof ((_a = possibleProviderEpisodes[0]) === null || _a === void 0 ? void 0 : _a.image) !== 'undefined' &&
@@ -338,7 +358,6 @@ class Myanimelist extends models_1.AnimeParser {
          * @returns anime info without streamable episodes
          */
         this.fetchMalInfoById = async (id) => {
-            var _a;
             const animeInfo = {
                 id: id,
                 title: '',
@@ -361,8 +380,31 @@ class Myanimelist extends models_1.AnimeParser {
             animeInfo.genres = genres;
             animeInfo.image = image;
             animeInfo.description = desc;
-            animeInfo.title = (_a = $('.title-name')) === null || _a === void 0 ? void 0 : _a.text();
+            animeInfo.title = {
+                english: $('.js-alternative-titles.hide').children().eq(0).text().replace('English: ', '').trim(),
+                romaji: $('.title-name').text(),
+                native: $('.js-alternative-titles.hide').parent().children().eq(9).text().trim(),
+                userPreferred: $('.js-alternative-titles.hide').children().eq(0).text().replace('English: ', '').trim(),
+            };
+            animeInfo.synonyms = $('.js-alternative-titles.hide')
+                .parent()
+                .children()
+                .eq(8)
+                .text()
+                .replace('Synonyms:', '')
+                .trim()
+                .split(',');
             animeInfo.studios = [];
+            animeInfo.popularity = parseInt($('.numbers.popularity').text().trim().replace('Popularity #', '').trim());
+            const producers = [];
+            $('a').each(function (i, link) {
+                var _a;
+                if (((_a = $(link).attr('href')) === null || _a === void 0 ? void 0 : _a.includes('producer')) &&
+                    $(link).parent().children().eq(0).text() == 'Producers:') {
+                    producers.push($(link).text());
+                }
+            });
+            animeInfo.producers = producers;
             // animeInfo.episodes = episodes;
             const teaserDOM = $('.video-promotion > a');
             if (teaserDOM.length > 0) {
@@ -376,8 +418,69 @@ class Myanimelist extends models_1.AnimeParser {
                     };
                 }
             }
+            const ops = $('.theme-songs.js-theme-songs.opnening').find('tr').get();
+            const ignoreList = ['Apple Music', 'Youtube Music', 'Amazon Music', 'Spotify'];
+            animeInfo.openings = ops.map((element) => {
+                //console.log($(element).text().trim());
+                const name = $(element).children().eq(1).children().first().text().trim();
+                if (!ignoreList.includes(name)) {
+                    if ($(element).find('.theme-song-index').length != 0) {
+                        const index = $(element).find('.theme-song-index').text().trim();
+                        const band = $(element).find('.theme-song-artist').text().trim();
+                        const episodes = $(element).find('.theme-song-episode').text().trim();
+                        //console.log($(element).children().eq(1).text().trim().split(index)[1]);
+                        return {
+                            name: $(element).children().eq(1).text().trim().split(index)[1].split(band)[0].trim(),
+                            band: band.replace('by ', ''),
+                            episodes: episodes,
+                        };
+                    }
+                    else {
+                        const band = $(element).find('.theme-song-artist').text().trim();
+                        const episodes = $(element).find('.theme-song-episode').text().trim();
+                        return {
+                            name: $(element).children().eq(1).text().trim().split(band)[0].trim(),
+                            band: band.replace('by ', ''),
+                            episodes: episodes,
+                        };
+                    }
+                }
+            });
+            animeInfo.openings = animeInfo.openings.filter(function (element) {
+                return element !== undefined;
+            });
+            const eds = $('.theme-songs.js-theme-songs.ending').find('tr').get();
+            animeInfo.endings = eds.map((element) => {
+                //console.log($(element).text().trim());
+                const name = $(element).children().eq(1).children().first().text().trim();
+                if (!ignoreList.includes(name)) {
+                    if ($(element).find('.theme-song-index').length != 0) {
+                        const index = $(element).find('.theme-song-index').text().trim();
+                        const band = $(element).find('.theme-song-artist').text().trim();
+                        const episodes = $(element).find('.theme-song-episode').text().trim();
+                        //console.log($(element).children().eq(1).text().trim().split(index)[1]);
+                        return {
+                            name: $(element).children().eq(1).text().trim().split(index)[1].split(band)[0].trim(),
+                            band: band.replace('by ', ''),
+                            episodes: episodes,
+                        };
+                    }
+                    else {
+                        const band = $(element).find('.theme-song-artist').text().trim();
+                        const episodes = $(element).find('.theme-song-episode').text().trim();
+                        return {
+                            name: $(element).children().eq(1).text().trim().split(band)[0].trim(),
+                            band: band.replace('by ', ''),
+                            episodes: episodes,
+                        };
+                    }
+                }
+            });
+            animeInfo.endings = animeInfo.endings.filter(function (element) {
+                return element !== undefined;
+            });
             const description = $('.spaceit_pad').get();
-            description.forEach(elem => {
+            description.forEach((elem) => {
                 var _a;
                 const text = $(elem).text().toLowerCase().trim();
                 const key = text.split(':')[0];
@@ -392,7 +495,7 @@ class Myanimelist extends models_1.AnimeParser {
                             animeInfo.totalEpisodes = 0;
                         break;
                     case 'premiered':
-                        animeInfo.season = value.split(' ')[0];
+                        animeInfo.season = value.split(' ')[0].toUpperCase();
                         break;
                     case 'aired':
                         const dates = value.split('to');
@@ -419,10 +522,6 @@ class Myanimelist extends models_1.AnimeParser {
                         break;
                     case 'score':
                         animeInfo.rating = parseFloat(value);
-                        break;
-                    case 'synonyms':
-                        animeInfo.synonyms = value.split(',');
-                        animeInfo.synonyms = animeInfo.synonyms.map(x => x.trim());
                         break;
                     case 'studios':
                         for (const studio of $(elem).find('a'))
@@ -501,20 +600,8 @@ class Myanimelist extends models_1.AnimeParser {
 exports.default = Myanimelist;
 // (async () => {
 //   const mal = new Myanimelist();
-//   console.log(await mal.fetchAnimeInfo('21'));
-//   //console.log((await mal.fetchMalInfoById("1535")));
-//   // setInterval(async function(){
-//   //     let numReqs = 1;
-//   //     let promises = [];
-//   //     for(let i = 0; i < numReqs; i++){
-//   //         promises.push(mal.fetchMalInfoById("28223"));
-//   //     }
-//   //     let data : IAnimeInfo[] = await Promise.all(promises);
-//   //     for(let i = 0; i < numReqs; i++){
-//   //         assert(data[i].rating === 8.161);
-//   //     }
-//   //     count+=numReqs;
-//   //     console.log("Count: ", count, "Time: ", (performance.now() - start));
-//   // },1000);
+//   // const search = await mal.search('one piece');
+//   const info = await mal.fetchAnimeInfo('21', true);
+//   //console.log(info);
 // })();
 //# sourceMappingURL=mal.js.map

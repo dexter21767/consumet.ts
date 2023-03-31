@@ -39,10 +39,13 @@ class MangaDex extends models_1.MangaParser {
                     (_a = mangaInfo.chapters) === null || _a === void 0 ? void 0 : _a.push({
                         id: chapter.id,
                         title: chapter.attributes.title ? chapter.attributes.title : chapter.attributes.chapter,
+                        chapterNumber: chapter.attributes.chapter,
+                        volumeNumber: chapter.attributes.volume,
                         pages: chapter.attributes.pages,
                     });
                 }
-                const coverArt = await this.fetchCoverImage(data.data.relationships[2].id);
+                const findCoverArt = data.data.relationships.find((rel) => rel.type === 'cover_art');
+                const coverArt = await this.fetchCoverImage(findCoverArt === null || findCoverArt === void 0 ? void 0 : findCoverArt.id);
                 mangaInfo.image = `${this.baseUrl}/covers/${mangaInfo.id}/${coverArt}`;
                 return mangaInfo;
             }
@@ -62,7 +65,7 @@ class MangaDex extends models_1.MangaParser {
                 for (const id of res.data.chapter.data) {
                     pages.push({
                         img: `${res.data.baseUrl}/data/${res.data.chapter.hash}/${id}`,
-                        page: parseInt(/x(.*)-/g.exec(id)[1]),
+                        page: parseInt((0, utils_1.substringBefore)(id, '-').replace(/[^0-9.]/g, '')),
                     });
                 }
                 return pages;
@@ -131,5 +134,12 @@ class MangaDex extends models_1.MangaParser {
         };
     }
 }
+// (async () => {
+//   const md = new MangaDex();
+//   const search = await md.search('solo leveling');
+//   const manga = await md.fetchMangaInfo(search.results[0].id);
+//   const chapterPages = await md.fetchChapterPages(manga.chapters![0].id);
+//   console.log(chapterPages);
+// })();
 exports.default = MangaDex;
 //# sourceMappingURL=mangadex.js.map

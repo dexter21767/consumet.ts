@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const axios_1 = __importDefault(require("axios"));
 const cheerio_1 = require("cheerio");
 const crypto_js_1 = __importDefault(require("crypto-js"));
+const utils_1 = require("../utils");
 const models_1 = require("../models");
 class RapidCloud extends models_1.VideoExtractor {
     constructor() {
@@ -44,11 +45,22 @@ class RapidCloud extends models_1.VideoExtractor {
                 // }
                 res = await axios_1.default.get(`${this.host}/ajax/embed-6/getSources?id=${id}`, options);
                 let { data: { sources, tracks, intro, encrypted }, } = res;
-                let decryptKey = await (await axios_1.default.get('https://raw.githubusercontent.com/consumet/rapidclown/main/key.txt')).data;
+                let decryptKey = await (await axios_1.default.get('https://github.com/enimax-anime/key/blob/e6/key.txt')).data;
+                decryptKey = (0, utils_1.substringBefore)((0, utils_1.substringAfter)(decryptKey, '"blob-code blob-code-inner js-file-line">'), '</td>');
+                if (!decryptKey) {
+                    decryptKey = await (await axios_1.default.get('https://raw.githubusercontent.com/enimax-anime/key/e6/key.txt')).data;
+                }
                 if (!decryptKey)
                     decryptKey = this.fallbackKey;
-                if (encrypted)
-                    sources = JSON.parse(crypto_js_1.default.AES.decrypt(sources, decryptKey).toString(crypto_js_1.default.enc.Utf8));
+                try {
+                    if (encrypted) {
+                        const decrypt = crypto_js_1.default.AES.decrypt(sources, decryptKey);
+                        sources = JSON.parse(decrypt.toString(crypto_js_1.default.enc.Utf8));
+                    }
+                }
+                catch (err) {
+                    throw new Error('Cannot decrypt sources. Perhaps the key is invalid.');
+                }
                 this.sources = sources === null || sources === void 0 ? void 0 : sources.map((s) => ({
                     url: s.file,
                     isM3U8: s.file.includes('.m3u8'),
@@ -62,7 +74,7 @@ class RapidCloud extends models_1.VideoExtractor {
                         const m3u8data = data
                             .split('\n')
                             .filter((line) => line.includes('.m3u8') && line.includes('RESOLUTION='));
-                        const secondHalf = m3u8data.map((line) => line.match(/(?<=RESOLUTION=).*(?<=,C)|(?<=URI=).*/g));
+                        const secondHalf = m3u8data.map((line) => { var _a; return (_a = line.match(/RESOLUTION=.*,(C)|URI=.*/g)) === null || _a === void 0 ? void 0 : _a.map((s) => s.split('=')[1]); });
                         const TdArray = secondHalf.map((s) => {
                             const f1 = s[0].split(',C')[0];
                             const f2 = s[1].replace(/"/g, '');

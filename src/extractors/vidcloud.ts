@@ -1,9 +1,8 @@
 import axios from 'axios';
 import CryptoJS from 'crypto-js';
-// import WebSocket from 'ws';
 
 import { VideoExtractor, IVideo, ISubtitle, Intro } from '../models';
-import { USER_AGENT, isJson } from '../utils';
+import { USER_AGENT, isJson, substringAfter, substringBefore } from '../utils';
 
 class VidCloud extends VideoExtractor {
   protected override serverName = 'VidCloud';
@@ -37,14 +36,16 @@ class VidCloud extends VideoExtractor {
         options
       );
 
-      //const res = await this.wss(id!);
-
       if (!isJson(res.data.sources)) {
-        const { data: key } = await axios.get(
-          'https://raw.githubusercontent.com/consumet/rapidclown/rabbitstream/key.txt'
-        );
+        let { data: key } = await axios.get('https://github.com/enimax-anime/key/blob/e4/key.txt');
 
-        sources = JSON.parse(CryptoJS.AES.decrypt(res.data.sources, key).toString(CryptoJS.enc.Utf8));
+        key = substringBefore(substringAfter(key, '"blob-code blob-code-inner js-file-line">'), '</td>');
+
+        if (!key) {
+          key = await (await axios.get('https://raw.githubusercontent.com/enimax-anime/key/e4/key.txt')).data;
+        }
+        const decryptedVal = CryptoJS.AES.decrypt(res.data.sources, key).toString(CryptoJS.enc.Utf8)
+        sources = isJson(decryptedVal) ? JSON.parse(decryptedVal) : res.data.sources
       }
 
       this.sources = sources.map((s: any) => ({
@@ -95,29 +96,6 @@ class VidCloud extends VideoExtractor {
       throw err;
     }
   };
-
-  // private wss = async (iframeId: string): Promise<any> => {
-  //   const ws = new WebSocket('wss://wsx.dokicloud.one/socket.io/?EIO=4&transport=websocket');
-  //   ws.onopen = () => {
-  //     ws.send('40');
-  //   };
-  //   return await new Promise(resolve => {
-  //     let sid = '';
-  //     let res: { sid: string; sources: any[]; tracks: any[] } = { sid: '', sources: [], tracks: [] };
-  //     ws.onmessage = e => {
-  //       const data = e.data.toString();
-  //       if (data.startsWith('40')) {
-  //         res.sid = JSON.parse(data.slice(2)).sid;
-  //         ws.send(`42["getSources",{"id":"${iframeId}"}]`);
-  //       } else if (data.startsWith('42["getSources"')) {
-  //         const ress = JSON.parse(data.slice(2))[1];
-  //         res.sources = ress.sources;
-  //         res.tracks = ress.tracks;
-  //         resolve(res);
-  //       }
-  //     };
-  //   });
-  // };
 }
 
 export default VidCloud;

@@ -14,7 +14,7 @@ class Mangasee123 extends models_1.MangaParser {
         this.baseUrl = 'https://mangasee123.com';
         this.logo = 'https://scontent.fman4-1.fna.fbcdn.net/v/t1.6435-1/80033336_1830005343810810_419412485691408384_n.png?stp=dst-png_p148x148&_nc_cat=104&ccb=1-7&_nc_sid=1eb0c7&_nc_ohc=XpeoABDI-sEAX-5hLFV&_nc_ht=scontent.fman4-1.fna&oh=00_AT9nIRz5vPiNqqzNpSg2bJymX22rZ1JumYTKBqg_cD0Alg&oe=6317290E';
         this.classPath = 'MANGA.Mangasee123';
-        this.sgProxy = 'https://cors.proxy.consumet.org';
+        this.sgProxy = 'https://cors.consumet.stream';
         this.fetchMangaInfo = async (mangaId, ...args) => {
             const mangaInfo = {
                 id: mangaId,
@@ -91,18 +91,12 @@ class Mangasee123 extends models_1.MangaParser {
                     const sanitizedAlts = [];
                     const item = data[i];
                     const altTitles = data[i]['a'];
-                    switch (altTitles.length == 0) {
-                        // Has altTitles, search through them...
-                        case false:
-                            sanitizedAlts.map(alt => {
-                                alt.replace(/\s/g, '').toLowerCase();
-                            });
-                            if (item['s'].toLowerCase().includes(sanitizedQuery) || sanitizedAlts.includes(sanitizedQuery))
-                                matches.push(item);
-                        // Does not have altTitles, ignore 'a' key:
-                        case true:
-                            if (item['s'].replace(/\s/g, '').toLowerCase().includes(sanitizedQuery))
-                                matches.push(item);
+                    for (const alt of altTitles) {
+                        sanitizedAlts.push(alt.replace(/\s/g, '').toLowerCase());
+                    }
+                    if (item['s'].replace(/\s/g, '').toLowerCase().includes(sanitizedQuery) ||
+                        sanitizedAlts.includes(sanitizedQuery)) {
+                        matches.push(item);
                     }
                 }
                 const results = matches.map((val) => ({

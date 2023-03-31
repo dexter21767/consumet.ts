@@ -120,7 +120,10 @@ class Enime extends AnimeParser {
   /**
    * @param id anilist id
    */
-  fetchAnimeInfoByAnilistId = async (id: string, type?: 'gogoanime' | 'zoro'): Promise<IAnimeInfo> => {
+  fetchAnimeInfoByAnilistId = async (
+    id: string,
+    type: 'gogoanime' | 'zoro' = 'gogoanime'
+  ): Promise<IAnimeInfo> => {
     const animeInfo: IAnimeInfo = {
       id: id,
       title: '',
@@ -296,7 +299,7 @@ class Enime extends AnimeParser {
     };
 
     const {
-      data: { url, referer },
+      data: { url, referer, subtitle },
     } = await axios.get(`${this.enimeApi}/source/${sourceId}`);
 
     res.headers!['Referer'] = referer;
@@ -321,6 +324,15 @@ class Enime extends AnimeParser {
       isM3U8: url.includes('.m3u8'),
       quality: 'default',
     });
+
+    if (subtitle) {
+      res.subtitles = [
+        {
+          url: subtitle,
+          lang: 'English',
+        },
+      ];
+    }
 
     return res;
   };

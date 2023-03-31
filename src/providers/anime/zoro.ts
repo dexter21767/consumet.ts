@@ -25,6 +25,10 @@ class Zoro extends AnimeParser {
     'https://is3-ssl.mzstatic.com/image/thumb/Purple112/v4/7e/91/00/7e9100ee-2b62-0942-4cdc-e9b93252ce1c/source/512x512bb.jpg';
   protected override classPath = 'ANIME.Zoro';
 
+  constructor(zoroBase?: string) {
+    super();
+    this.baseUrl = zoroBase ? zoroBase : this.baseUrl;
+  }
   /**
    * @param query Search query
    * @param page Page number (optional)
@@ -33,6 +37,7 @@ class Zoro extends AnimeParser {
     const res: ISearch<IAnimeResult> = {
       currentPage: page,
       hasNextPage: false,
+      totalPages: 0,
       results: [],
     };
 
@@ -43,11 +48,19 @@ class Zoro extends AnimeParser {
       const $ = load(data);
 
       res.hasNextPage =
-        $('.pagination > li').length > 0
-          ? $('.pagination > li').last().hasClass('active')
-            ? false
-            : true
-          : false;
+        $('.pagination > li').length > 0 ?
+          $('.pagination li.active').length > 0 ?
+            $('.pagination > li').last().hasClass('active') ? false : true
+          : false
+        : false;
+
+      res.totalPages = parseInt(
+        $('.pagination > .page-item a[title="Last"]')?.attr('href')?.split("=").pop()
+          ??
+        $('.pagination > .page-item.active a')?.text()?.trim()
+      ) || 0;
+
+      if (res.totalPages === 0 && !res.hasNextPage) res.totalPages = 1;
 
       $('.film_list-wrap > div.flw-item').each((i, el) => {
         const id = $(el)
@@ -70,6 +83,11 @@ class Zoro extends AnimeParser {
         });
       });
 
+      if (res.results.length === 0) {
+        res.totalPages = 0;
+        res.hasNextPage = false;
+      }
+
       return res;
     } catch (err: any) {
       throw new Error(err);
@@ -88,6 +106,9 @@ class Zoro extends AnimeParser {
       const { data } = await axios.get(`${this.baseUrl}/watch/${id}`);
       const $ = load(data);
 
+      const { mal_id, anilist_id } = JSON.parse($('#syncData').text());
+      info.malID = Number(mal_id);
+      info.alID = Number(anilist_id);
       info.title = $('h2.film-name > a.text-white').text();
       info.image = $('img.film-poster-img').attr('src');
       info.description = $('div.film-description').text().trim();
@@ -297,7 +318,6 @@ class Zoro extends AnimeParser {
 // (async () => {
 //   const zoro = new Zoro();
 //   const anime = await zoro.search('classroom of the elite');
-//   const episodes = (await zoro.fetchAnimeInfo(anime.results[1].id)).episodes;
 //   const sources = await zoro.fetchEpisodeSources('bleach-the-movie-fade-to-black-1492$episode$58326');
 //   console.log(sources);
 // })();

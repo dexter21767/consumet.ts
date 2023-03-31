@@ -11,8 +11,9 @@ class StreamSB extends models_1.VideoExtractor {
         super(...arguments);
         this.serverName = 'streamsb';
         this.sources = [];
-        this.host = 'https://sbplay2.com/sources48';
-        this.host2 = 'https://watchsb.com/sources48';
+        this.host = 'https://streamsss.net/sources50';
+        // TODO: update host2
+        this.host2 = 'https://watchsb.com/sources50';
         this.PAYLOAD = (hex) => `566d337678566f743674494a7c7c${hex}7c7c346b6767586d6934774855537c7c73747265616d7362/6565417268755339773461447c7c346133383438333436313335376136323337373433383634376337633465366534393338373136643732373736343735373237613763376334363733353737303533366236333463353333363534366137633763373337343732363536313664373336327c7c6b586c3163614468645a47617c7c73747265616d7362`;
         this.extract = async (videoUrl, isAlt = false) => {
             let headers = {
@@ -33,7 +34,7 @@ class StreamSB extends models_1.VideoExtractor {
                 throw new Error('No source found. Try a different server.');
             headers = {
                 'User-Agent': utils_1.USER_AGENT,
-                Referer: videoUrl.href.split("e/")[0],
+                Referer: videoUrl.href.split('e/')[0],
             };
             const m3u8Urls = await axios_1.default.get(res.data.stream_data.file, {
                 headers,
